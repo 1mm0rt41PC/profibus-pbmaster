@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 1mm0rt41PC — https://github.com/1mm0rt41PC/profibus-pbmaster
 """
 pbmaster.py — mini maître PROFIBUS-DP classe 1 (DP-V0) en Python/pyserial.
 
