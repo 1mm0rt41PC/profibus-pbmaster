@@ -1,3 +1,4 @@
+![pbmaster](https://github.com/1mm0rt41PC/profibus-pbmaster/blob/main/hero.png?raw=true)
 # pbmaster
 
 A minimal PROFIBUS-DP class 1 master (DP-V0) in a single Python file, for driving
