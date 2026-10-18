@@ -1,6 +1,12 @@
 ![pbmaster](https://github.com/1mm0rt41PC/profibus-pbmaster/blob/main/hero.png?raw=true)
 # pbmaster
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Python 3](https://img.shields.io/badge/python-3.8%2B-blue.svg)
+![Dependencies](https://img.shields.io/badge/deps-pyserial%20only-lightgrey.svg)
+
+Repository: <https://github.com/1mm0rt41PC/profibus-pbmaster>
+
 A minimal PROFIBUS-DP class 1 master (DP-V0) in a single Python file, for driving
 Allen-Bradley **1794-APB** FLEX I/O adapters (and their OEM rebadges, e.g. Invensys
 I/A Series / SPX-APV) from a Linux box with a cheap USB/RS-485 dongle.
@@ -31,11 +37,47 @@ Innomaker isolated USB-RS485 adapter (FTDI FT230X) at 9600 baud.
 
 Serial format is always 8E1; there is nothing to configure there.
 
+#### USB adapter used: Innomaker USB2RS485-C
+
+The adapter this project was developed and tested with:
+
+| | |
+|---|---|
+| Product | **Innomaker USB2RS485-C**, industrial isolated USB 2.0 → RS-485 converter (sold on Amazon as "innomaker Industrial-Grade USB 2.0 to RS485 Converter Adapter") |
+| Documentation | [User manual (PDF)](https://github.com/INNO-MAKER/USB2RS485-C/blob/main/USB2RS485-C%20UserManual-v1.0.pdf) · [github.com/INNO-MAKER/USB2RS485-C](https://github.com/INNO-MAKER/USB2RS485-C) |
+| USB chip | FTDI **FT230X** — `lsusb` shows `0403:6015 Future Technology Devices International, Ltd Bridge(I2C/SPI/UART/FIFO)`, `iProduct` is the factory string "FT230X Basic UART" (this is normal, the RS-485 transceiver sits behind it) |
+| Transceiver | Isolated half-duplex RS-485 (TD541S485H), automatic direction control — no `--rts` needed |
+| Isolation / protection | Isolated power and signals, 15 kV ESD (HBM), CMTI > 25 kV/µs, 1/8 unit load (up to 256 nodes) |
+| Speed | 300 bps … 3 Mbps (pbmaster uses 9600 or 19200 on PROFIBUS) |
+| Connector | DB9 male plus a screw-terminal breakout board labelled **485A / GND / 485B** with a 120 Ω termination jumper |
+| LEDs | PWR, TX (blinks on every frame sent, even if nobody answers), RX (blinks only when a slave replies) |
+| Linux | Plug and play with the in-kernel `ftdi_sio` driver: appears as `/dev/ttyUSB0` (`crw-rw---- root dialout`), no driver to install |
+
+Wiring to the 1794-APB with this adapter (PROFIBUS cable, standard colours):
+
+| PROFIBUS connector (APB side) | Cable | Innomaker terminal |
+|---|---|---|
+| A1 (DB9 pin 8) | green | **485A** |
+| B1 (DB9 pin 3) | red | **485B** |
+| shield (DB9 pin 1) | braid | **GND** |
+
+Both terminations on (red switch "On" on the PROFIBUS plug, jumper fitted on the
+Innomaker board). Innomaker follows the TIA-485 naming (A = −, B = +) like PROFIBUS,
+so colours map 1:1; adapters built on MAX485-style chips label the lines the other way
+round, hence "swap A/B if nothing answers".
+
+Symptoms seen during bring-up, for the record: TX blinking but no answer and no noise
+→ wires on the wrong DB9 pins; exactly one "noise" byte per frame at every baud rate →
+A and B swapped; `Prm_Fault` on a series B adapter → use `--prm 0000` (the default).
+
 ### Install
 
 ```bash
+git clone https://github.com/1mm0rt41PC/profibus-pbmaster.git
+cd profibus-pbmaster
 sudo apt install python3-serial          # or: pip install pyserial
 sudo usermod -aG dialout $USER           # then log out / in
+python3 pbmaster.py probe
 ```
 
 ### Commands
@@ -163,6 +205,18 @@ adapter unpowered; exactly one noise byte per frame at every rate → A/B swappe
 References: Rockwell 1794-APB user manual (publication 1794-6.5.6 / 1794-UM057),
 PROFIBUS DP (IEC 61158 / DIN 19245-3).
 
+### Contributing
+
+Issues and pull requests are welcome at
+<https://github.com/1mm0rt41PC/profibus-pbmaster>. If you get another FLEX I/O
+module or adapter revision working, please share the `probe` / `identify` output.
+
+### License
+
+[MIT](LICENSE) — © 2026 1mm0rt41PC. PROFIBUS is a trademark of PROFIBUS Nutzerorganisation e.V.;
+FLEX I/O and Allen-Bradley are trademarks of Rockwell Automation. This project is not
+affiliated with either.
+
 ---
 
 ## Français
@@ -180,11 +234,49 @@ PROFIBUS DP (IEC 61158 / DIN 19245-3).
 
 Le format série est toujours 8E1, rien à régler de ce côté.
 
+#### Adaptateur USB utilisé : Innomaker USB2RS485-C
+
+L'adaptateur avec lequel ce projet a été développé et testé :
+
+| | |
+|---|---|
+| Produit | **Innomaker USB2RS485-C**, convertisseur industriel isolé USB 2.0 → RS-485 (vendu sur Amazon sous « innomaker Industrial-Grade USB 2.0 to RS485 Converter Adapter ») |
+| Documentation | [Manuel utilisateur (PDF)](https://github.com/INNO-MAKER/USB2RS485-C/blob/main/USB2RS485-C%20UserManual-v1.0.pdf) · [github.com/INNO-MAKER/USB2RS485-C](https://github.com/INNO-MAKER/USB2RS485-C) |
+| Puce USB | FTDI **FT230X** — `lsusb` affiche `0403:6015 Future Technology Devices International, Ltd Bridge(I2C/SPI/UART/FIFO)`, `iProduct` est la chaîne d'usine « FT230X Basic UART » (normal : le transceiver RS-485 est derrière) |
+| Transceiver | RS-485 half-duplex isolé (TD541S485H), direction automatique — pas besoin de `--rts` |
+| Isolation / protection | Alimentation et signaux isolés, ESD 15 kV (HBM), CMTI > 25 kV/µs, 1/8 unit load (jusqu'à 256 nœuds) |
+| Vitesse | 300 bps … 3 Mbps (pbmaster utilise 9600 ou 19200 sur PROFIBUS) |
+| Connectique | DB9 mâle plus une platine à bornier à vis **485A / GND / 485B** avec jumper de terminaison 120 Ω |
+| LED | PWR, TX (clignote à chaque trame émise, même sans réponse), RX (clignote seulement quand un esclave répond) |
+| Linux | Plug and play avec le pilote noyau `ftdi_sio` : apparaît en `/dev/ttyUSB0` (`crw-rw---- root dialout`), aucun pilote à installer |
+
+Câblage vers le 1794-APB avec cet adaptateur (câble PROFIBUS, couleurs standard) :
+
+| Connecteur PROFIBUS (côté APB) | Câble | Bornier Innomaker |
+|---|---|---|
+| A1 (DB9 pin 8) | vert | **485A** |
+| B1 (DB9 pin 3) | rouge | **485B** |
+| blindage (DB9 pin 1) | tresse | **GND** |
+
+Les deux terminaisons actives (bouton rouge « On » sur la prise PROFIBUS, jumper en
+place sur la platine Innomaker). Innomaker suit la convention TIA-485 (A = −, B = +)
+comme PROFIBUS, donc les couleurs se correspondent 1:1 ; les adaptateurs à base de
+puces type MAX485 nomment les lignes à l'envers, d'où le « inverser A/B si rien ne
+répond ».
+
+Symptômes rencontrés à la mise en service, pour mémoire : TX clignote mais aucune
+réponse ni bruit → fils sur les mauvaises pins du DB9 ; exactement un octet de « bruit »
+par trame à toutes les vitesses → A et B inversés ; `Prm_Fault` sur un adaptateur
+série B → `--prm 0000` (le défaut).
+
 ### Installation
 
 ```bash
+git clone https://github.com/1mm0rt41PC/profibus-pbmaster.git
+cd profibus-pbmaster
 sudo apt install python3-serial          # ou : pip install pyserial
 sudo usermod -aG dialout $USER           # puis se reconnecter
+python3 pbmaster.py probe
 ```
 
 ### Commandes
@@ -315,3 +407,16 @@ mise sous tension, couper/remettre le 24 V de l'APB.
 
 Références : manuel utilisateur Rockwell 1794-APB (publication 1794-6.5.6 /
 1794-UM057), PROFIBUS DP (IEC 61158 / DIN 19245-3).
+
+### Contribuer
+
+Issues et pull requests bienvenues sur
+<https://github.com/1mm0rt41PC/profibus-pbmaster>. Si vous faites fonctionner un autre
+module FLEX I/O ou une autre révision d'adaptateur, partagez la sortie de `probe` /
+`identify`.
+
+### Licence
+
+[MIT](LICENSE) — © 2026 1mm0rt41PC. PROFIBUS est une marque de PROFIBUS
+Nutzerorganisation e.V. ; FLEX I/O et Allen-Bradley sont des marques de Rockwell
+Automation. Ce projet n'est affilié à aucun des deux.
